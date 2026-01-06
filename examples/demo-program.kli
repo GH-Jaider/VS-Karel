@@ -1,0 +1,35 @@
+BEGINNING-OF-PROGRAM
+	DEFINE-NEW-INSTRUCTION turnright AS
+	BEGIN
+		turnleft;
+		turnleft;
+		turnleft
+	END
+	DEFINE-NEW-INSTRUCTION move-to-wall AS
+	BEGIN
+		WHILE front-is-clear DO
+		BEGIN
+			move
+		END
+	END
+	BEGINNING-OF-EXECUTION
+		move;
+		move;
+		turnleft;
+		move;
+		IF next-to-a-beeper THEN
+		BEGIN
+			pickbeeper
+		END
+		ELSE
+		BEGIN
+			putbeeper
+		END
+		turnright;
+		ITERATE 3 TIMES
+		BEGIN
+			move
+		END
+		turnoff
+	END-OF-EXECUTION
+END-OF-PROGRAM

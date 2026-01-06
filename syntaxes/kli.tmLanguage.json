@@ -1,0 +1,93 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Karel Instructions",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#program-structure" },
+    { "include": "#control-flow" },
+    { "include": "#conditions" },
+    { "include": "#instructions" },
+    { "include": "#numbers" },
+    { "include": "#custom-instruction-def" },
+    { "include": "#custom-instruction-call" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.karel",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "program-structure": {
+      "patterns": [
+        {
+          "name": "keyword.control.program.karel",
+          "match": "\\b(BEGINNING-OF-PROGRAM|END-OF-PROGRAM|BEGINNING-OF-EXECUTION|END-OF-EXECUTION)\\b"
+        },
+        {
+          "name": "keyword.control.block.karel",
+          "match": "\\b(BEGIN|END)\\b"
+        }
+      ]
+    },
+    "control-flow": {
+      "patterns": [
+        {
+          "name": "keyword.control.conditional.karel",
+          "match": "\\b(IF|THEN|ELSE)\\b"
+        },
+        {
+          "name": "keyword.control.loop.karel",
+          "match": "\\b(WHILE|DO|ITERATE|TIMES)\\b"
+        }
+      ]
+    },
+    "conditions": {
+      "patterns": [
+        {
+          "name": "support.function.condition.karel",
+          "match": "\\b(front-is-clear|front-is-blocked|left-is-clear|left-is-blocked|right-is-clear|right-is-blocked|next-to-a-beeper|not-next-to-a-beeper|facing-north|not-facing-north|facing-south|not-facing-south|facing-east|not-facing-east|facing-west|not-facing-west|beeper-in-bag)\\b"
+        }
+      ]
+    },
+    "instructions": {
+      "patterns": [
+        {
+          "name": "support.function.builtin.karel",
+          "match": "\\b(move|turnleft|pickbeeper|putbeeper|turnoff)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.karel",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "custom-instruction-def": {
+      "patterns": [
+        {
+          "match": "\\b(DEFINE-NEW-INSTRUCTION)\\s+([a-zA-Z][a-zA-Z0-9-]*)\\s+(AS)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.define.karel" },
+            "2": { "name": "entity.name.function.karel" },
+            "3": { "name": "keyword.other.as.karel" }
+          }
+        }
+      ]
+    },
+    "custom-instruction-call": {
+      "patterns": [
+        {
+          "name": "entity.name.function.call.karel",
+          "match": "\\b[a-zA-Z][a-zA-Z0-9-]*\\b(?=\\s*;)"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.karel"
+}

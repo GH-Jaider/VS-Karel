@@ -1,24 +1,34 @@
-# Compiled object files
-*.o
-*.obj
+# Dependencies
+node_modules/
 
-# Executables
-*.exe
-*.out
-*.app
-Karel
-karel
+# Build outputs
+dist/
+out/
 
-# Backup files
-*.bak
-*~
+# VS Code test
+.vscode-test/
 
-# IDE/Editor files
-.vscode/
+# Package
+*.vsix
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
 .idea/
 *.swp
 *.swo
 
-# Build directories
-build/
-bin/
+# Debug
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Coverage
+coverage/
+.nyc_output/

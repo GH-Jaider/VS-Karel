@@ -1,0 +1,187 @@
+{
+  "name": "vs-karel",
+  "displayName": "VS Karel",
+  "description": "Karel the Robot IDE for VS Code - Write, visualize, and execute Karel programs with graph-based worlds",
+  "version": "0.0.1",
+  "publisher": "GH-Jaider",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GH-Jaider/VS-Carel"
+  },
+  "engines": {
+    "vscode": "^1.106.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Education",
+    "Visualization"
+  ],
+  "keywords": [
+    "karel",
+    "robot",
+    "education",
+    "programming",
+    "visualization"
+  ],
+  "activationEvents": [
+    "onLanguage:karel-instructions",
+    "onLanguage:karel-map"
+  ],
+  "main": "./dist/extension.js",
+  "l10n": "./l10n",
+  "contributes": {
+    "languages": [
+      {
+        "id": "karel-instructions",
+        "aliases": ["Karel Instructions", "karel"],
+        "extensions": [".kli"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "karel-map",
+        "aliases": ["Karel Map", "karelmap"],
+        "extensions": [".klm"],
+        "configuration": "./language-configuration-json.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "karel-instructions",
+        "scopeName": "source.karel",
+        "path": "./syntaxes/kli.tmLanguage.json"
+      },
+      {
+        "language": "karel-map",
+        "scopeName": "source.karelmap",
+        "path": "./syntaxes/klm.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "vs-karel.run",
+        "title": "%commands.run%",
+        "category": "Karel",
+        "icon": "$(play)"
+      },
+      {
+        "command": "vs-karel.step",
+        "title": "%commands.step%",
+        "category": "Karel",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "vs-karel.stop",
+        "title": "%commands.stop%",
+        "category": "Karel",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "vs-karel.reset",
+        "title": "%commands.reset%",
+        "category": "Karel",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vs-karel.toggleErrorHighlighting",
+        "title": "%commands.toggleErrorHighlighting%",
+        "category": "Karel"
+      },
+      {
+        "command": "vs-karel.openVisualizer",
+        "title": "%commands.openVisualizer%",
+        "category": "Karel",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "vs-karel.convertMap",
+        "title": "%commands.convertMap%",
+        "category": "Karel"
+      }
+    ],
+    "configuration": {
+      "title": "VS Karel",
+      "properties": {
+        "vs-karel.enableErrorHighlighting": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.enableErrorHighlighting%"
+        },
+        "vs-karel.executionSpeed": {
+          "type": "number",
+          "default": 500,
+          "minimum": 50,
+          "maximum": 2000,
+          "description": "%config.executionSpeed%"
+        },
+        "vs-karel.autoOpenVisualizer": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.autoOpenVisualizer%"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "vs-karel.run",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "editorLangId == karel-instructions"
+      },
+      {
+        "command": "vs-karel.step",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "editorLangId == karel-instructions"
+      },
+      {
+        "command": "vs-karel.toggleErrorHighlighting",
+        "key": "ctrl+shift+k e",
+        "mac": "cmd+shift+k e",
+        "when": "editorLangId == karel-instructions"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "vs-karel.run",
+          "when": "editorLangId == karel-instructions",
+          "group": "navigation"
+        },
+        {
+          "command": "vs-karel.openVisualizer",
+          "when": "editorLangId == karel-instructions || editorLangId == karel-map",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.106.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@vscode/l10n-dev": "^0.0.35",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.1",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.1",
+    "webpack": "^5.103.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@vscode/l10n": "^0.0.18"
+  }
+}
