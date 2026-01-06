@@ -1,0 +1,24 @@
+# Compiled object files
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+*.app
+Karel
+karel
+
+# Backup files
+*.bak
+*~
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build directories
+build/
+bin/
