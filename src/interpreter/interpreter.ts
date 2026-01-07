@@ -85,13 +85,7 @@ const VALID_CONDITIONS = new Set([
 /**
  * Built-in instruction names.
  */
-const BUILT_IN_INSTRUCTIONS = new Set([
-  "move",
-  "turnleft",
-  "pickbeeper",
-  "putbeeper",
-  "turnoff",
-]);
+const BUILT_IN_INSTRUCTIONS = new Set(["move", "turnleft", "pickbeeper", "putbeeper", "turnoff"]);
 
 /**
  * AST Node types for the parsed program.
@@ -397,10 +391,7 @@ export class Parser {
   private parseProgram(): ProgramNode {
     // Expect BEGINNING-OF-PROGRAM
     if (!this.check(TokenType.BeginningOfProgram)) {
-      throw new ParseError(
-        ErrorMessages.missingProgramStart(),
-        this.peek().line
-      );
+      throw new ParseError(ErrorMessages.missingProgramStart(), this.peek().line);
     }
     this.advance();
 
@@ -412,19 +403,13 @@ export class Parser {
 
     // Expect BEGINNING-OF-EXECUTION
     if (!this.check(TokenType.BeginningOfExecution)) {
-      throw new ParseError(
-        ErrorMessages.missingExecutionStart(),
-        this.peek().line
-      );
+      throw new ParseError(ErrorMessages.missingExecutionStart(), this.peek().line);
     }
     this.advance();
 
     // Parse execution statements
     const statements: ASTNode[] = [];
-    while (
-      !this.check(TokenType.EndOfExecution) &&
-      !this.check(TokenType.EOF)
-    ) {
+    while (!this.check(TokenType.EndOfExecution) && !this.check(TokenType.EOF)) {
       statements.push(this.parseStatement());
     }
 
@@ -445,19 +430,13 @@ export class Parser {
 
     // Expect END-OF-EXECUTION
     if (!this.check(TokenType.EndOfExecution)) {
-      throw new ParseError(
-        ErrorMessages.missingExecutionEnd(),
-        this.peek().line
-      );
+      throw new ParseError(ErrorMessages.missingExecutionEnd(), this.peek().line);
     }
     this.advance();
 
     // Expect END-OF-PROGRAM
     if (!this.check(TokenType.EndOfProgram)) {
-      throw new ParseError(
-        ErrorMessages.missingProgramEnd(),
-        this.peek().line
-      );
+      throw new ParseError(ErrorMessages.missingProgramEnd(), this.peek().line);
     }
     this.advance();
 
@@ -518,10 +497,7 @@ export class Parser {
 
     // Expect END
     if (!this.check(TokenType.End)) {
-      throw new ParseError(
-        ErrorMessages.unmatchedBegin(this.peek().line),
-        this.peek().line
-      );
+      throw new ParseError(ErrorMessages.unmatchedBegin(this.peek().line), this.peek().line);
     }
     this.advance();
 
@@ -619,10 +595,7 @@ export class Parser {
 
     // Expect number
     if (!this.check(TokenType.Number)) {
-      throw new ParseError(
-        ErrorMessages.invalidIterateCount(this.peek().line),
-        this.peek().line
-      );
+      throw new ParseError(ErrorMessages.invalidIterateCount(this.peek().line), this.peek().line);
     }
     const count = parseInt(this.advance().value, 10);
 
@@ -650,10 +623,7 @@ export class Parser {
 
     // Validate instruction name
     const lowerName = name.toLowerCase();
-    if (
-      !BUILT_IN_INSTRUCTIONS.has(lowerName) &&
-      !this.customInstructions.has(lowerName)
-    ) {
+    if (!BUILT_IN_INSTRUCTIONS.has(lowerName) && !this.customInstructions.has(lowerName)) {
       this.diagnostics.push({
         message: ErrorMessages.unknownInstruction(name, line),
         line,
@@ -904,9 +874,7 @@ export class Interpreter {
 
       this.iterationCount++;
       if (this.iterationCount > this.maxIterations) {
-        throw new RuntimeError(
-          ErrorMessages.maxIterationsReached(this.maxIterations)
-        );
+        throw new RuntimeError(ErrorMessages.maxIterationsReached(this.maxIterations));
       }
 
       if (frame.type === "block" && frame.statements) {

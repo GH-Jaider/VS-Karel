@@ -38,12 +38,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("vs-karel.toggleErrorHighlighting", () =>
       toggleErrorHighlighting()
     ),
-    vscode.commands.registerCommand("vs-karel.openVisualizer", () =>
-      openVisualizer(context)
-    ),
-    vscode.commands.registerCommand("vs-karel.convertMap", () =>
-      convertAsciiMap()
-    )
+    vscode.commands.registerCommand("vs-karel.openVisualizer", () => openVisualizer(context)),
+    vscode.commands.registerCommand("vs-karel.convertMap", () => convertAsciiMap())
   );
 
   // Auto-open visualizer when opening .klm files
@@ -56,6 +52,15 @@ export function activate(context: vscode.ExtensionContext): void {
         if (autoOpen) {
           loadMapFile(doc, context);
         }
+      }
+    })
+  );
+
+  // Reload map when saving .klm files
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument((doc) => {
+      if (doc.languageId === "karel-map") {
+        reloadMapFile(doc, context);
       }
     })
   );
@@ -74,11 +79,30 @@ export function deactivate(): void {
  * Run the current Karel program.
  */
 async function runProgram(context: vscode.ExtensionContext): Promise<void> {
-  const editor = vscode.window.activeTextEditor;
+  let editor = vscode.window.activeTextEditor;
+
+  // If no active Karel instructions file, prompt user to select one
   if (!editor || editor.document.languageId !== "karel-instructions") {
-    vscode.window.showWarningMessage(UIMessages.noActiveFile());
-    return;
+    // Try to use stored source document
+    if (currentSourceDocument) {
+      editor = vscode.window.visibleTextEditors.find((e) => e.document === currentSourceDocument);
+    }
+
+    // If still no valid editor, prompt for file
+    if (!editor || editor.document.languageId !== "karel-instructions") {
+      const loaded = await promptForInstructionsFile(context);
+      if (!loaded) {
+        return;
+      }
+      editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+    }
   }
+
+  // Store reference to the source document
+  currentSourceDocument = editor.document;
 
   // Ensure we have a world loaded
   if (!currentWorld) {
@@ -96,9 +120,7 @@ async function runProgram(context: vscode.ExtensionContext): Promise<void> {
   currentInterpreter = new Interpreter(currentWorld!);
 
   // Set execution speed from config
-  const speed = vscode.workspace
-    .getConfiguration("vs-karel")
-    .get("executionSpeed", 500);
+  const speed = vscode.workspace.getConfiguration("vs-karel").get("executionSpeed", 500);
   currentInterpreter.setSpeed(speed);
 
   // Load program
@@ -106,9 +128,7 @@ async function runProgram(context: vscode.ExtensionContext): Promise<void> {
   const diagnostics = currentInterpreter.load(source);
 
   if (diagnostics.some((d) => d.severity === "error")) {
-    vscode.window.showErrorMessage(
-      t("Cannot run program: there are errors in the code")
-    );
+    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
     return;
   }
 
@@ -148,7 +168,11 @@ async function runProgram(context: vscode.ExtensionContext): Promise<void> {
  */
 async function stepProgram(context: vscode.ExtensionContext): Promise<void> {
   // If we already have an interpreter in step mode, continue stepping
-  if (currentInterpreter && currentInterpreter.isStepInitialized() && !currentInterpreter.isStepCompleted()) {
+  if (
+    currentInterpreter &&
+    currentInterpreter.isStepInitialized() &&
+    !currentInterpreter.isStepCompleted()
+  ) {
     const webview = WebviewProvider.currentPanel;
     if (!webview) {
       return;
@@ -169,10 +193,26 @@ async function stepProgram(context: vscode.ExtensionContext): Promise<void> {
   }
 
   // Starting fresh - need an active editor with Karel code
-  const editor = vscode.window.activeTextEditor;
+  let editor = vscode.window.activeTextEditor;
+
+  // If no active Karel instructions file, prompt user to select one
   if (!editor || editor.document.languageId !== "karel-instructions") {
-    vscode.window.showWarningMessage(UIMessages.noActiveFile());
-    return;
+    // Try to use stored source document
+    if (currentSourceDocument) {
+      editor = vscode.window.visibleTextEditors.find((e) => e.document === currentSourceDocument);
+    }
+
+    // If still no valid editor, prompt for file
+    if (!editor || editor.document.languageId !== "karel-instructions") {
+      const loaded = await promptForInstructionsFile(context);
+      if (!loaded) {
+        return;
+      }
+      editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+    }
   }
 
   // Store reference to the source document
@@ -198,9 +238,7 @@ async function stepProgram(context: vscode.ExtensionContext): Promise<void> {
   const diagnostics = currentInterpreter.load(source);
 
   if (diagnostics.some((d) => d.severity === "error")) {
-    vscode.window.showErrorMessage(
-      t("Cannot run program: there are errors in the code")
-    );
+    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
     return;
   }
 
@@ -267,8 +305,7 @@ function resetWorld(context: vscode.ExtensionContext): void {
   if (currentInterpreter) {
     currentInterpreter.reset();
   }
-  // Clear source document reference so next step starts fresh
-  currentSourceDocument = null;
+  // Keep currentSourceDocument reference so run/step can reuse it
 }
 
 /**
@@ -286,9 +323,7 @@ async function toggleErrorHighlighting(): Promise<void> {
 /**
  * Open the world visualizer.
  */
-async function openVisualizer(
-  context: vscode.ExtensionContext
-): Promise<void> {
+async function openVisualizer(context: vscode.ExtensionContext): Promise<void> {
   const editor = vscode.window.activeTextEditor;
 
   // If viewing a map file, load it
@@ -313,10 +348,7 @@ async function openVisualizer(
 /**
  * Load a .klm map file.
  */
-function loadMapFile(
-  document: vscode.TextDocument,
-  context: vscode.ExtensionContext
-): void {
+function loadMapFile(document: vscode.TextDocument, context: vscode.ExtensionContext): void {
   try {
     const content = document.getText();
     const map: KarelMap = JSON.parse(content);
@@ -339,11 +371,51 @@ function loadMapFile(
 }
 
 /**
+ * Reload a .klm map file when saved (only if visualizer is open).
+ */
+function reloadMapFile(document: vscode.TextDocument, context: vscode.ExtensionContext): void {
+  // Only reload if the visualizer is already open
+  const webview = WebviewProvider.currentPanel;
+  if (!webview) {
+    return;
+  }
+
+  const filename = path.basename(document.uri.fsPath);
+
+  try {
+    const content = document.getText();
+    const map: KarelMap = JSON.parse(content);
+
+    // Validate map structure
+    if (!map.dimensions || !map.karel) {
+      throw new Error(t("Invalid map file: missing dimensions or karel"));
+    }
+
+    currentWorld = World.fromJSON(map);
+    webview.loadWorld(currentWorld);
+    webview.setStatus("stopped", "Ready");
+
+    // Reset interpreter if active
+    if (currentInterpreter) {
+      currentInterpreter.reset();
+      currentSourceDocument = null;
+    }
+
+    vscode.window.showInformationMessage(UIMessages.mapReloaded(filename));
+    outputChannel.appendLine(UIMessages.mapReloaded(filename));
+  } catch (error) {
+    if (error instanceof Error) {
+      const errorMsg = UIMessages.mapReloadError(filename, error.message);
+      vscode.window.showErrorMessage(errorMsg);
+      outputChannel.appendLine(errorMsg);
+    }
+  }
+}
+
+/**
  * Prompt user to select a map file.
  */
-async function promptForMapFile(
-  context: vscode.ExtensionContext
-): Promise<boolean> {
+async function promptForMapFile(context: vscode.ExtensionContext): Promise<boolean> {
   const options: vscode.OpenDialogOptions = {
     canSelectMany: false,
     filters: {
@@ -368,6 +440,30 @@ async function promptForMapFile(
         vscode.window.showErrorMessage(`Failed to load map: ${error.message}`);
       }
     }
+  }
+
+  return false;
+}
+
+/**
+ * Prompt user to select a Karel instructions file.
+ */
+async function promptForInstructionsFile(context: vscode.ExtensionContext): Promise<boolean> {
+  const options: vscode.OpenDialogOptions = {
+    canSelectMany: false,
+    filters: {
+      "Karel Instructions": ["kli"],
+    },
+    title: t("Select Karel Instructions File"),
+  };
+
+  const fileUri = await vscode.window.showOpenDialog(options);
+
+  if (fileUri && fileUri[0]) {
+    const document = await vscode.workspace.openTextDocument(fileUri[0]);
+    await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+    currentSourceDocument = document;
+    return true;
   }
 
   return false;
@@ -405,9 +501,7 @@ async function convertAsciiMap(): Promise<void> {
     const doc = await vscode.workspace.openTextDocument(outputPath);
     await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
 
-    vscode.window.showInformationMessage(
-      UIMessages.conversionComplete(path.basename(outputPath))
-    );
+    vscode.window.showInformationMessage(UIMessages.conversionComplete(path.basename(outputPath)));
   } catch (error) {
     if (error instanceof Error) {
       vscode.window.showErrorMessage(`Conversion failed: ${error.message}`);

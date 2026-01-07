@@ -47,12 +47,8 @@ Graph-based JSON format with walls defined as blocked connections between adjace
 {
   "dimensions": { "width": 10, "height": 8 },
   "karel": { "x": 1, "y": 1, "facing": 0, "beepers": 5 },
-  "beepers": [
-    { "x": 3, "y": 3, "count": 2 }
-  ],
-  "walls": [
-    { "from": { "x": 4, "y": 3 }, "to": { "x": 4, "y": 4 } }
-  ]
+  "beepers": [{ "x": 3, "y": 3, "count": 2 }],
+  "walls": [{ "from": { "x": 4, "y": 3 }, "to": { "x": 4, "y": 4 } }]
 }
 ```
 
@@ -60,27 +56,28 @@ Graph-based JSON format with walls defined as blocked connections between adjace
 
 ## Commands
 
-| Command | Shortcut | Description |
-|---------|----------|-------------|
-| `Karel: Run` | `Ctrl+Shift+R` | Run the current program |
-| `Karel: Step` | `Ctrl+Shift+S` | Step through program |
-| `Karel: Stop` | - | Stop execution |
-| `Karel: Reset` | - | Reset world to initial state |
-| `Karel: Toggle Error Highlighting` | `Ctrl+Shift+K E` | Enable/disable error highlighting |
-| `Karel: Open World Visualizer` | - | Open the world visualization panel |
-| `Karel: Convert ASCII Map to KLM` | - | Convert old ASCII maps to graph format |
+| Command                            | Shortcut         | Description                            |
+| ---------------------------------- | ---------------- | -------------------------------------- |
+| `Karel: Run`                       | `Ctrl+Shift+R`   | Run the current program                |
+| `Karel: Step`                      | `Ctrl+Shift+S`   | Step through program                   |
+| `Karel: Stop`                      | -                | Stop execution                         |
+| `Karel: Reset`                     | -                | Reset world to initial state           |
+| `Karel: Toggle Error Highlighting` | `Ctrl+Shift+K E` | Enable/disable error highlighting      |
+| `Karel: Open World Visualizer`     | -                | Open the world visualization panel     |
+| `Karel: Convert ASCII Map to KLM`  | -                | Convert old ASCII maps to graph format |
 
 ## Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `vs-karel.enableErrorHighlighting` | `true` | Enable/disable error highlighting |
-| `vs-karel.executionSpeed` | `500` | Execution speed in ms (50-2000) |
-| `vs-karel.autoOpenVisualizer` | `true` | Auto-open visualizer when running |
+| Setting                            | Default | Description                       |
+| ---------------------------------- | ------- | --------------------------------- |
+| `vs-karel.enableErrorHighlighting` | `true`  | Enable/disable error highlighting |
+| `vs-karel.executionSpeed`          | `500`   | Execution speed in ms (50-2000)   |
+| `vs-karel.autoOpenVisualizer`      | `true`  | Auto-open visualizer when running |
 
 ## Supported Instructions
 
 ### Basic Instructions
+
 - `move` - Move forward one cell
 - `turnleft` - Turn 90° counter-clockwise
 - `pickbeeper` - Pick up a beeper
@@ -88,15 +85,18 @@ Graph-based JSON format with walls defined as blocked connections between adjace
 - `turnoff` - End program
 
 ### Control Flow
+
 - `IF <condition> THEN BEGIN ... END`
 - `IF <condition> THEN BEGIN ... END ELSE BEGIN ... END`
 - `WHILE <condition> DO BEGIN ... END`
 - `ITERATE <n> TIMES BEGIN ... END`
 
 ### Conditions
+
 `front-is-clear`, `front-is-blocked`, `left-is-clear`, `left-is-blocked`, `right-is-clear`, `right-is-blocked`, `next-to-a-beeper`, `not-next-to-a-beeper`, `facing-north`, `not-facing-north`, `facing-south`, `not-facing-south`, `facing-east`, `not-facing-east`, `facing-west`, `not-facing-west`, `beeper-in-bag`
 
 ### Custom Instructions
+
 ```karel
 DEFINE-NEW-INSTRUCTION turnright AS
 BEGIN

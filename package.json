@@ -33,14 +33,24 @@
     "languages": [
       {
         "id": "karel-instructions",
-        "aliases": ["Karel Instructions", "karel"],
-        "extensions": [".kli"],
+        "aliases": [
+          "Karel Instructions",
+          "karel"
+        ],
+        "extensions": [
+          ".kli"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "karel-map",
-        "aliases": ["Karel Map", "karelmap"],
-        "extensions": [".klm"],
+        "aliases": [
+          "Karel Map",
+          "karelmap"
+        ],
+        "extensions": [
+          ".klm"
+        ],
         "configuration": "./language-configuration-json.json"
       }
     ],
@@ -165,16 +175,19 @@
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"*.json\" \"*.md\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"*.json\" \"*.md\"",
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.106.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/vscode": "^1.106.0",
     "@vscode/l10n-dev": "^0.0.35",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.39.1",
+    "prettier": "^3.7.4",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.1",

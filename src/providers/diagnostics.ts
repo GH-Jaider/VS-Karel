@@ -12,8 +12,7 @@ export class DiagnosticsProvider {
   private disposables: vscode.Disposable[] = [];
 
   constructor() {
-    this.diagnosticCollection =
-      vscode.languages.createDiagnosticCollection("karel");
+    this.diagnosticCollection = vscode.languages.createDiagnosticCollection("karel");
 
     // Listen for document changes
     this.disposables.push(
@@ -54,9 +53,7 @@ export class DiagnosticsProvider {
    * Check if error highlighting is enabled.
    */
   private isEnabled(): boolean {
-    return vscode.workspace
-      .getConfiguration("vs-karel")
-      .get("enableErrorHighlighting", true);
+    return vscode.workspace.getConfiguration("vs-karel").get("enableErrorHighlighting", true);
   }
 
   /**
@@ -71,9 +68,7 @@ export class DiagnosticsProvider {
     const parser = new Parser();
     const { diagnostics } = parser.parse(document.getText());
 
-    const vsDiagnostics = diagnostics.map((d) =>
-      this.toVSCodeDiagnostic(d, document)
-    );
+    const vsDiagnostics = diagnostics.map((d) => this.toVSCodeDiagnostic(d, document));
 
     this.diagnosticCollection.set(document.uri, vsDiagnostics);
   }
@@ -129,11 +124,7 @@ export class DiagnosticsProvider {
   async toggle(): Promise<boolean> {
     const config = vscode.workspace.getConfiguration("vs-karel");
     const current = config.get("enableErrorHighlighting", true);
-    await config.update(
-      "enableErrorHighlighting",
-      !current,
-      vscode.ConfigurationTarget.Global
-    );
+    await config.update("enableErrorHighlighting", !current, vscode.ConfigurationTarget.Global);
     return !current;
   }
 

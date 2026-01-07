@@ -47,16 +47,11 @@ export class WebviewProvider {
     }
 
     // Create new panel
-    const panel = vscode.window.createWebviewPanel(
-      "karelWorld",
-      "Karel World",
-      column,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [extensionUri],
-      }
-    );
+    const panel = vscode.window.createWebviewPanel("karelWorld", "Karel World", column, {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+      localResourceRoots: [extensionUri],
+    });
 
     WebviewProvider.currentPanel = new WebviewProvider(panel, extensionUri);
     return WebviewProvider.currentPanel;
@@ -105,7 +100,10 @@ export class WebviewProvider {
   /**
    * Show execution status.
    */
-  public setStatus(status: "running" | "stopped" | "completed" | "error" | "stepping", message?: string): void {
+  public setStatus(
+    status: "running" | "stopped" | "completed" | "error" | "stepping",
+    message?: string
+  ): void {
     this.panel.webview.postMessage({
       type: "status",
       status,
@@ -321,6 +319,7 @@ export class WebviewProvider {
         let world = null;
         const CELL_SIZE = 40;
         const WALL_WIDTH = 4;
+        const AXIS_MARGIN = 25; // Space for axis labels
 
         // UI Elements
         const runBtn = document.getElementById('runBtn');
@@ -391,13 +390,37 @@ export class WebviewProvider {
 
             const { width, height } = world.dimensions;
 
-            // Resize canvas
-            canvas.width = width * CELL_SIZE + WALL_WIDTH * 2;
-            canvas.height = height * CELL_SIZE + WALL_WIDTH * 2;
+            // Resize canvas with space for axis labels (left and bottom)
+            canvas.width = AXIS_MARGIN + width * CELL_SIZE + WALL_WIDTH * 2;
+            canvas.height = AXIS_MARGIN + height * CELL_SIZE + WALL_WIDTH * 2;
+
+            // Grid starts after the axis margin
+            const gridOffsetX = AXIS_MARGIN;
+            const gridOffsetY = 0;
 
             // Clear
             ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--cell-bg') || '#1e1e1e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw axis labels
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--fg-color') || '#ccc';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // X-axis labels (bottom) - centered under each cell
+            for (let x = 1; x <= width; x++) {
+                const labelX = gridOffsetX + WALL_WIDTH + (x - 0.5) * CELL_SIZE;
+                const labelY = canvas.height - AXIS_MARGIN / 2;
+                ctx.fillText(x.toString(), labelX, labelY);
+            }
+
+            // Y-axis labels (left) - centered next to each row
+            for (let y = 1; y <= height; y++) {
+                const labelX = AXIS_MARGIN / 2;
+                const labelY = gridOffsetY + WALL_WIDTH + (height - y + 0.5) * CELL_SIZE;
+                ctx.fillText(y.toString(), labelX, labelY);
+            }
 
             // Draw grid
             ctx.strokeStyle = '#333';
@@ -405,23 +428,23 @@ export class WebviewProvider {
 
             for (let x = 0; x <= width; x++) {
                 ctx.beginPath();
-                ctx.moveTo(x * CELL_SIZE + WALL_WIDTH, WALL_WIDTH);
-                ctx.lineTo(x * CELL_SIZE + WALL_WIDTH, height * CELL_SIZE + WALL_WIDTH);
+                ctx.moveTo(gridOffsetX + WALL_WIDTH + x * CELL_SIZE, gridOffsetY + WALL_WIDTH);
+                ctx.lineTo(gridOffsetX + WALL_WIDTH + x * CELL_SIZE, gridOffsetY + WALL_WIDTH + height * CELL_SIZE);
                 ctx.stroke();
             }
 
             for (let y = 0; y <= height; y++) {
                 ctx.beginPath();
-                ctx.moveTo(WALL_WIDTH, y * CELL_SIZE + WALL_WIDTH);
-                ctx.lineTo(width * CELL_SIZE + WALL_WIDTH, y * CELL_SIZE + WALL_WIDTH);
+                ctx.moveTo(gridOffsetX + WALL_WIDTH, gridOffsetY + WALL_WIDTH + y * CELL_SIZE);
+                ctx.lineTo(gridOffsetX + WALL_WIDTH + width * CELL_SIZE, gridOffsetY + WALL_WIDTH + y * CELL_SIZE);
                 ctx.stroke();
             }
 
             // Draw beepers
             ctx.fillStyle = '#f0c040';
             for (const beeper of world.beepers) {
-                const cx = (beeper.x - 0.5) * CELL_SIZE + WALL_WIDTH;
-                const cy = (height - beeper.y + 0.5) * CELL_SIZE + WALL_WIDTH;
+                const cx = gridOffsetX + WALL_WIDTH + (beeper.x - 0.5) * CELL_SIZE;
+                const cy = gridOffsetY + WALL_WIDTH + (height - beeper.y + 0.5) * CELL_SIZE;
 
                 ctx.beginPath();
                 ctx.arc(cx, cy, CELL_SIZE / 4, 0, Math.PI * 2);
@@ -446,25 +469,25 @@ export class WebviewProvider {
             for (const wall of world.walls) {
                 const { from, to } = wall;
 
-                // Determine wall orientation and position
-                const x1 = (from.x - 0.5) * CELL_SIZE + WALL_WIDTH;
-                const y1 = (height - from.y + 0.5) * CELL_SIZE + WALL_WIDTH;
-                const x2 = (to.x - 0.5) * CELL_SIZE + WALL_WIDTH;
-                const y2 = (height - to.y + 0.5) * CELL_SIZE + WALL_WIDTH;
-
-                // Draw wall at midpoint perpendicular to direction
-                const mx = (x1 + x2) / 2;
-                const my = (y1 + y2) / 2;
-
+                // Wall is drawn on the shared edge between from and to cells
+                // Calculate the grid line position where the wall should be drawn
                 ctx.beginPath();
                 if (from.x === to.x) {
-                    // Horizontal wall (cells are vertically adjacent)
-                    ctx.moveTo(mx - CELL_SIZE / 2, my);
-                    ctx.lineTo(mx + CELL_SIZE / 2, my);
+                    // Cells are vertically adjacent (same x, different y)
+                    // Wall is horizontal, drawn between the two cells
+                    const wallY = Math.max(from.y, to.y); // The y coordinate of the upper cell
+                    const screenX = gridOffsetX + WALL_WIDTH + (from.x - 1) * CELL_SIZE;
+                    const screenY = gridOffsetY + WALL_WIDTH + (height - wallY + 1) * CELL_SIZE;
+                    ctx.moveTo(screenX, screenY);
+                    ctx.lineTo(screenX + CELL_SIZE, screenY);
                 } else {
-                    // Vertical wall (cells are horizontally adjacent)
-                    ctx.moveTo(mx, my - CELL_SIZE / 2);
-                    ctx.lineTo(mx, my + CELL_SIZE / 2);
+                    // Cells are horizontally adjacent (same y, different x)
+                    // Wall is vertical, drawn between the two cells
+                    const wallX = Math.max(from.x, to.x); // The x coordinate of the right cell
+                    const screenX = gridOffsetX + WALL_WIDTH + (wallX - 1) * CELL_SIZE;
+                    const screenY = gridOffsetY + WALL_WIDTH + (height - from.y) * CELL_SIZE;
+                    ctx.moveTo(screenX, screenY);
+                    ctx.lineTo(screenX, screenY + CELL_SIZE);
                 }
                 ctx.stroke();
             }
@@ -472,17 +495,17 @@ export class WebviewProvider {
             // Draw border walls
             ctx.strokeStyle = '#666';
             ctx.lineWidth = WALL_WIDTH;
-            ctx.strokeRect(WALL_WIDTH / 2, WALL_WIDTH / 2,
+            ctx.strokeRect(gridOffsetX + WALL_WIDTH / 2, gridOffsetY + WALL_WIDTH / 2,
                 width * CELL_SIZE + WALL_WIDTH,
                 height * CELL_SIZE + WALL_WIDTH);
 
             // Draw Karel
-            drawKarel(world.karel, height);
+            drawKarel(world.karel, height, gridOffsetX, gridOffsetY);
         }
 
-        function drawKarel(karel, worldHeight) {
-            const cx = (karel.x - 0.5) * CELL_SIZE + WALL_WIDTH;
-            const cy = (worldHeight - karel.y + 0.5) * CELL_SIZE + WALL_WIDTH;
+        function drawKarel(karel, worldHeight, gridOffsetX, gridOffsetY) {
+            const cx = gridOffsetX + WALL_WIDTH + (karel.x - 0.5) * CELL_SIZE;
+            const cy = gridOffsetY + WALL_WIDTH + (worldHeight - karel.y + 0.5) * CELL_SIZE;
             const size = CELL_SIZE * 0.7;
 
             ctx.save();

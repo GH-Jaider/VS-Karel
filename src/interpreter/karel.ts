@@ -142,7 +142,7 @@ export class Karel {
    * Get the position to Karel's left.
    */
   leftPosition(): Position {
-    const leftDir = (this._facing + 1) % 4 as Direction;
+    const leftDir = ((this._facing + 1) % 4) as Direction;
     const vector = DirectionVectors[leftDir];
     return {
       x: this._position.x + vector.x,
@@ -154,7 +154,7 @@ export class Karel {
    * Get the position to Karel's right.
    */
   rightPosition(): Position {
-    const rightDir = (this._facing + 3) % 4 as Direction;
+    const rightDir = ((this._facing + 3) % 4) as Direction;
     const vector = DirectionVectors[rightDir];
     return {
       x: this._position.x + vector.x,
@@ -248,16 +248,7 @@ export class Karel {
   /**
    * Create Karel from JSON-compatible object.
    */
-  static fromJSON(data: {
-    x: number;
-    y: number;
-    facing: number;
-    beepers?: number;
-  }): Karel {
-    return new Karel(
-      { x: data.x, y: data.y },
-      data.facing as Direction,
-      data.beepers ?? 0
-    );
+  static fromJSON(data: { x: number; y: number; facing: number; beepers?: number }): Karel {
+    return new Karel({ x: data.x, y: data.y }, data.facing as Direction, data.beepers ?? 0);
   }
 }

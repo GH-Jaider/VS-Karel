@@ -7,9 +7,7 @@
     ["BEGINNING-OF-PROGRAM", "END-OF-PROGRAM"],
     ["BEGINNING-OF-EXECUTION", "END-OF-EXECUTION"]
   ],
-  "autoClosingPairs": [
-    { "open": "BEGIN", "close": "\nEND" }
-  ],
+  "autoClosingPairs": [{ "open": "BEGIN", "close": "\nEND" }],
   "surroundingPairs": [],
   "folding": {
     "markers": {

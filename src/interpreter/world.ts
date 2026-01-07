@@ -149,9 +149,7 @@ export class World {
    */
   addWall(from: Position, to: Position): void {
     if (!areAdjacent(from, to)) {
-      throw new Error(
-        ErrorMessages.invalidWall(from.x, from.y, to.x, to.y)
-      );
+      throw new Error(ErrorMessages.invalidWall(from.x, from.y, to.x, to.y));
     }
     this._walls.add(wallKey(from, to));
   }
