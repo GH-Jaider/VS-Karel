@@ -18,6 +18,9 @@ const config = {
   },
   resolve: {
     extensions: [".ts", ".js"],
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
   },
   module: {
     rules: [
