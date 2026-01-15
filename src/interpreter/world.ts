@@ -7,8 +7,8 @@
  * - Two cells are connected if there's no wall between them
  */
 
-import { Karel, Position, Direction, DirectionVectors } from "./karel";
-import { ErrorMessages } from "../i18n/messages";
+import { Karel, Position, Direction, DirectionVectors } from "@/interpreter/karel";
+import { ErrorMessages } from "@/i18n/messages";
 
 /**
  * Represents a wall between two adjacent cells.
@@ -389,7 +389,7 @@ export class World {
 
     // Reset beepers
     this._beepers = new Map(this._initialBeepers);
-    
+
     // Clear modified flag
     this._isModified = false;
   }
