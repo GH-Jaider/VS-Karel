@@ -19,6 +19,7 @@ let currentWorld: World | null = null;
 let currentInterpreter: Interpreter | null = null;
 let currentSourceDocument: vscode.TextDocument | null = null;
 let outputChannel: vscode.OutputChannel;
+let executionLineDecoration: vscode.TextEditorDecorationType;
 
 /**
  * Extension activation.
@@ -30,9 +31,27 @@ export function activate(context: vscode.ExtensionContext): void {
   diagnosticsProvider = new DiagnosticsProvider();
   context.subscriptions.push(diagnosticsProvider);
 
+  // Create execution line decoration (theme-aware, debugger-style)
+  executionLineDecoration = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor("editor.stackFrameHighlightBackground"),
+    isWholeLine: true,
+    overviewRulerColor: new vscode.ThemeColor("editorOverviewRuler.rangeHighlightForeground"),
+    overviewRulerLane: vscode.OverviewRulerLane.Full,
+    gutterIconPath: vscode.Uri.parse(
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23007ACC' d='M6 3l6 5-6 5z'/%3E%3C/svg%3E"
+    ),
+    gutterIconSize: "contain",
+    borderWidth: "0 0 0 3px",
+    borderStyle: "solid",
+    borderColor: new vscode.ThemeColor("editorGutter.modifiedBackground"),
+  });
+  context.subscriptions.push(executionLineDecoration);
+
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand("vs-karel.run", () => runProgram(context)),
+    vscode.commands.registerCommand("vs-karel.runFromWebview", () => runFromWebview(context)),
+    vscode.commands.registerCommand("vs-karel.changeProgram", () => changeProgram(context)),
     vscode.commands.registerCommand("vs-karel.step", () => stepProgram(context)),
     vscode.commands.registerCommand("vs-karel.stop", () => stopProgram()),
     vscode.commands.registerCommand("vs-karel.reset", () => resetWorld(context)),
@@ -66,6 +85,16 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
+  // Clear execution highlighting when active editor changes
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      // If switched away from the Karel instructions document, clear highlighting
+      if (!editor || editor.document !== currentSourceDocument) {
+        clearExecutionHighlight();
+      }
+    })
+  );
+
   outputChannel.appendLine("VS Karel extension activated");
 }
 
@@ -73,44 +102,49 @@ export function activate(context: vscode.ExtensionContext): void {
  * Extension deactivation.
  */
 export function deactivate(): void {
+  clearExecutionHighlight();
   outputChannel.appendLine("VS Karel extension deactivated");
 }
 
 /**
- * Run the current Karel program.
+ * Clear execution line highlighting from all visible editors.
+ */
+function clearExecutionHighlight(): void {
+  if (currentSourceDocument) {
+    const editors = vscode.window.visibleTextEditors.filter(
+      (e) => e.document === currentSourceDocument
+    );
+    editors.forEach((editor) => {
+      editor.setDecorations(executionLineDecoration, []);
+    });
+  }
+}
+
+/**
+ * Run the current Karel program (from topbar - always resets and prompts for map).
  */
 async function runProgram(context: vscode.ExtensionContext): Promise<void> {
   let editor = vscode.window.activeTextEditor;
 
   // If no active Karel instructions file, prompt user to select one
   if (!editor || editor.document.languageId !== "karel-instructions") {
-    // Try to use stored source document
-    if (currentSourceDocument) {
-      editor = vscode.window.visibleTextEditors.find((e) => e.document === currentSourceDocument);
+    const loaded = await promptForInstructionsFile(context);
+    if (!loaded) {
+      return;
     }
-
-    // If still no valid editor, prompt for file
-    if (!editor || editor.document.languageId !== "karel-instructions") {
-      const loaded = await promptForInstructionsFile(context);
-      if (!loaded) {
-        return;
-      }
-      editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        return;
-      }
+    editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
     }
   }
 
   // Store reference to the source document
   currentSourceDocument = editor.document;
 
-  // Ensure we have a world loaded
-  if (!currentWorld) {
-    const loaded = await promptForMapFile(context);
-    if (!loaded) {
-      return;
-    }
+  // Always prompt for map file (fresh start)
+  const loaded = await promptForMapFile(context);
+  if (!loaded || !currentWorld) {
+    return;
   }
 
   // Open visualizer
@@ -161,6 +195,107 @@ async function runProgram(context: vscode.ExtensionContext): Promise<void> {
       webview.setStatus("error", error.message);
       outputChannel.appendLine(`Error: ${error.message}`);
     }
+  }
+}
+
+/**
+ * Run program from webview (continuous mode - maintains state if modified).
+ */
+async function runFromWebview(context: vscode.ExtensionContext): Promise<void> {
+  // Ensure we have a world loaded
+  if (!currentWorld) {
+    const loaded = await promptForMapFile(context);
+    if (!loaded || !currentWorld) {
+      return;
+    }
+  }
+
+  // If world is modified, show warning dialog
+  if (currentWorld.isModified) {
+    const choice = await vscode.window.showWarningMessage(
+      t("The world has been modified. Continue from current state or reset?"),
+      { modal: true },
+      t("Continue"),
+      t("Reset")
+    );
+
+    if (!choice) {
+      return; // User cancelled
+    }
+
+    if (choice === t("Reset")) {
+      currentWorld.reset();
+    }
+  }
+
+  // Ensure we have a source document
+  if (!currentSourceDocument) {
+    const loaded = await promptForInstructionsFile(context);
+    if (!loaded || !currentSourceDocument) {
+      return;
+    }
+  }
+
+  // Open/get visualizer
+  const webview = WebviewProvider.createOrShow(context.extensionUri);
+  webview.loadWorld(currentWorld);
+
+  // Create interpreter
+  currentInterpreter = new Interpreter(currentWorld);
+
+  // Set execution speed from config
+  const speed = vscode.workspace.getConfiguration("vs-karel").get("executionSpeed", 500);
+  currentInterpreter.setSpeed(speed);
+
+  // Load program
+  const source = currentSourceDocument.getText();
+  const diagnostics = currentInterpreter.load(source);
+
+  if (diagnostics.some((d) => d.severity === "error")) {
+    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
+    return;
+  }
+
+  // Set up callbacks
+  currentInterpreter.onStep = (line) => {
+    webview.updateView();
+    webview.highlightLine(line);
+  };
+
+  currentInterpreter.onComplete = () => {
+    webview.setStatus("completed", UIMessages.executionCompleted());
+    outputChannel.appendLine(UIMessages.executionCompleted());
+  };
+
+  currentInterpreter.onError = (error) => {
+    webview.setStatus("error", error.message);
+    outputChannel.appendLine(`Error: ${error.message}`);
+    vscode.window.showErrorMessage(error.message);
+  };
+
+  // Run
+  webview.setStatus("running", UIMessages.executionStarted());
+  outputChannel.appendLine(UIMessages.executionStarted());
+
+  try {
+    await currentInterpreter.run();
+  } catch (error) {
+    if (error instanceof Error) {
+      webview.setStatus("error", error.message);
+      outputChannel.appendLine(`Error: ${error.message}`);
+    }
+  }
+}
+
+/**
+ * Change the program file to execute from webview.
+ */
+async function changeProgram(context: vscode.ExtensionContext): Promise<void> {
+  const loaded = await promptForInstructionsFile(context);
+  if (loaded) {
+    vscode.window.showInformationMessage(
+      UIMessages.programChanged(currentSourceDocument?.fileName ?? "")
+    );
   }
 }
 
@@ -247,17 +382,35 @@ async function stepProgram(context: vscode.ExtensionContext): Promise<void> {
   currentInterpreter.onStep = (line) => {
     webview.updateView();
     webview.highlightLine(line);
+
+    // Highlight current execution line in editor
+    if (currentSourceDocument) {
+      const editors = vscode.window.visibleTextEditors.filter(
+        (e) => e.document === currentSourceDocument
+      );
+      editors.forEach((editor) => {
+        const range = new vscode.Range(line - 1, 0, line - 1, Number.MAX_VALUE);
+        editor.setDecorations(executionLineDecoration, [range]);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      });
+    }
   };
 
   currentInterpreter.onComplete = () => {
     webview.setStatus("completed", UIMessages.executionCompleted());
     outputChannel.appendLine(UIMessages.executionCompleted());
+
+    // Clear execution line highlighting
+    clearExecutionHighlight();
   };
 
   currentInterpreter.onError = (error) => {
     webview.setStatus("error", error.message);
     outputChannel.appendLine(`Error: ${error.message}`);
     vscode.window.showErrorMessage(error.message);
+
+    // Clear execution line highlighting
+    clearExecutionHighlight();
   };
 
   webview.setStatus("stepping", UIMessages.stepMode());
@@ -288,6 +441,9 @@ function stopProgram(): void {
       webview.setStatus("stopped", UIMessages.executionStopped());
     }
     outputChannel.appendLine(UIMessages.executionStopped());
+
+    // Clear execution line highlighting
+    clearExecutionHighlight();
   }
 }
 
@@ -305,6 +461,9 @@ function resetWorld(context: vscode.ExtensionContext): void {
   }
   if (currentInterpreter) {
     currentInterpreter.reset();
+
+    // Clear execution line highlighting
+    clearExecutionHighlight();
   }
   // Keep currentSourceDocument reference so run/step can reuse it
 }

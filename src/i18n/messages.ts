@@ -75,4 +75,5 @@ export const UIMessages = {
   mapReloaded: (filename: string) => t("Map reloaded: {0}", filename),
   mapReloadError: (filename: string, error: string) =>
     t("Error reloading map {0}: {1}", filename, error),
+  programChanged: (filename: string) => t("Program changed to: {0}", filename),
 };

@@ -155,7 +155,7 @@
         },
         {
           "command": "vs-karel.openVisualizer",
-          "when": "editorLangId == karel-instructions || editorLangId == karel-map",
+          "when": "editorLangId == karel-map",
           "group": "navigation"
         }
       ]

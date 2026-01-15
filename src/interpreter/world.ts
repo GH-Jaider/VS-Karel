@@ -91,6 +91,7 @@ export class World {
   // Store initial state for reset
   private _initialKarel: Karel;
   private _initialBeepers: Map<string, number>;
+  private _isModified: boolean = false;
 
   constructor(map: KarelMap) {
     this._dimensions = { ...map.dimensions };
@@ -295,6 +296,7 @@ export class World {
       throw new Error(ErrorMessages.moveBlocked());
     }
     this._karel.move();
+    this._isModified = true;
   }
 
   /**
@@ -302,6 +304,7 @@ export class World {
    */
   turnLeft(): void {
     this._karel.turnLeft();
+    this._isModified = true;
   }
 
   /**
@@ -314,6 +317,7 @@ export class World {
       throw new Error(ErrorMessages.noBeepersToPickUp(pos.x, pos.y));
     }
     this._karel.pickBeeper();
+    this._isModified = true;
   }
 
   /**
@@ -325,6 +329,7 @@ export class World {
       throw new Error(ErrorMessages.noBeepersInBag());
     }
     this.addBeepers(this._karel.position);
+    this._isModified = true;
   }
 
   // ========== Condition Checking ==========
@@ -384,6 +389,16 @@ export class World {
 
     // Reset beepers
     this._beepers = new Map(this._initialBeepers);
+    
+    // Clear modified flag
+    this._isModified = false;
+  }
+
+  /**
+   * Check if world has been modified from initial state.
+   */
+  get isModified(): boolean {
+    return this._isModified;
   }
 
   /**

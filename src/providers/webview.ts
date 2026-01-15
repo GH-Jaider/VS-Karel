@@ -84,6 +84,7 @@ export class WebviewProvider {
     this.panel.webview.postMessage({
       type: "updateWorld",
       data: this.world.toJSON(),
+      isModified: this.world.isModified,
     });
   }
 
@@ -117,7 +118,10 @@ export class WebviewProvider {
   private handleMessage(message: { command: string; data?: unknown }): void {
     switch (message.command) {
       case "run":
-        vscode.commands.executeCommand("vs-karel.run");
+        vscode.commands.executeCommand("vs-karel.runFromWebview");
+        break;
+      case "changeProgram":
+        vscode.commands.executeCommand("vs-karel.changeProgram");
         break;
       case "step":
         vscode.commands.executeCommand("vs-karel.step");
@@ -237,6 +241,23 @@ export class WebviewProvider {
             background: #5a2727;
         }
 
+        .status.completed {
+            background: #2d5a27;
+        }
+
+        .status.stepping {
+            background: #27455a;
+        }
+
+        #runBtn.modified {
+            background: #5a4527;
+            border: 2px solid #f0ad4e;
+        }
+
+        #runBtn.modified:hover {
+            background: #6b5330;
+        }
+
         .canvas-container {
             flex: 1;
             display: flex;
@@ -283,6 +304,9 @@ export class WebviewProvider {
         <button id="resetBtn" title="Reset">
             ↺ Reset
         </button>
+        <button id="changeProgramBtn" title="Change Program">
+            📄 Change Program
+        </button>
         <span id="status" class="status">Ready</span>
         <div class="speed-control">
             <label for="speed">Speed:</label>
@@ -326,6 +350,7 @@ export class WebviewProvider {
         const stepBtn = document.getElementById('stepBtn');
         const stopBtn = document.getElementById('stopBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const changeProgramBtn = document.getElementById('changeProgramBtn');
         const statusEl = document.getElementById('status');
         const speedSlider = document.getElementById('speed');
         const speedValue = document.getElementById('speedValue');
@@ -335,6 +360,7 @@ export class WebviewProvider {
         stepBtn.addEventListener('click', () => vscode.postMessage({ command: 'step' }));
         stopBtn.addEventListener('click', () => vscode.postMessage({ command: 'stop' }));
         resetBtn.addEventListener('click', () => vscode.postMessage({ command: 'reset' }));
+        changeProgramBtn.addEventListener('click', () => vscode.postMessage({ command: 'changeProgram' }));
 
         speedSlider.addEventListener('input', (e) => {
             const speed = parseInt(e.target.value);
@@ -351,6 +377,7 @@ export class WebviewProvider {
                     world = message.data;
                     render();
                     updateInfoPanel();
+                    updateModifiedIndicator(message.isModified);
                     break;
                 case 'status':
                     setStatus(message.status, message.message);
@@ -369,6 +396,16 @@ export class WebviewProvider {
             runBtn.disabled = isRunning;
             stepBtn.disabled = isRunning;
             stopBtn.disabled = !isRunning;
+        }
+
+        function updateModifiedIndicator(isModified) {
+            if (isModified) {
+                runBtn.classList.add('modified');
+                runBtn.title = 'Run (⚠️ World Modified - will show confirmation)';
+            } else {
+                runBtn.classList.remove('modified');
+                runBtn.title = 'Run (Ctrl+Shift+R)';
+            }
         }
 
         function updateInfoPanel() {
