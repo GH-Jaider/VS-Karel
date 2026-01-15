@@ -28,6 +28,7 @@ pnpm-debug.log*
 # Environment
 .env
 .env.local
+Agents.md
 
 # Coverage
 coverage/

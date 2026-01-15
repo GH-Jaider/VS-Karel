@@ -5,7 +5,7 @@
  */
 
 import * as vscode from "vscode";
-import { World, KarelMap, Direction, DirectionNames } from "../interpreter";
+import { World, KarelMap } from "../interpreter";
 
 export class WebviewProvider {
   public static currentPanel: WebviewProvider | undefined;

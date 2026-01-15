@@ -1,0 +1,34 @@
+# VS Code Extension Package Ignores
+# Excludes files not needed in the production VSIX
+
+# Source files (compiled to dist/)
+src/
+tsconfig.json
+webpack.config.js
+
+# Development config
+eslint.config.mjs
+.prettierrc
+.editorconfig
+
+# Git
+.git/
+.gitignore
+
+# Package manager
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Examples (for development/testing only)
+examples/
+
+# Documentation (not needed in extension)
+Agents.md
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Build artifacts
+*.map
+.vscode-test/

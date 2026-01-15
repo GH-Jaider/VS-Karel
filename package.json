@@ -23,10 +23,6 @@
     "programming",
     "visualization"
   ],
-  "activationEvents": [
-    "onLanguage:karel-instructions",
-    "onLanguage:karel-map"
-  ],
   "main": "./dist/extension.js",
   "l10n": "./l10n",
   "contributes": {
