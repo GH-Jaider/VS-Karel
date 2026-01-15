@@ -50,7 +50,7 @@ export class WorldService {
       typeof m.karel === "object" &&
       typeof m.karel?.x === "number" &&
       typeof m.karel?.y === "number" &&
-      typeof m.karel?.facing === "number" &&
+      typeof m.karel?.facing === "string" &&
       typeof m.karel?.beepers === "number" &&
       Array.isArray(m.beepers) &&
       Array.isArray(m.walls)

@@ -44,7 +44,7 @@ export interface KarelMap {
   karel: {
     x: number;
     y: number;
-    facing: number;
+    facing: string;
     beepers: number;
   };
   beepers: BeeperStack[];

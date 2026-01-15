@@ -21,7 +21,7 @@ export function parseAsciiMap(lines: string[]): KarelMap {
 
   const map: KarelMap = {
     dimensions: { width, height },
-    karel: { x: 1, y: 1, facing: 0, beepers: 0 },
+    karel: { x: 1, y: 1, facing: "north", beepers: 0 },
     beepers: [],
     walls: [],
   };
@@ -38,19 +38,19 @@ export function parseAsciiMap(lines: string[]): KarelMap {
 
       switch (char) {
         case "^": // Karel facing north
-          map.karel = { x, y, facing: 0, beepers: 0 };
+          map.karel = { x, y, facing: "north", beepers: 0 };
           karelFound = true;
           break;
         case "<": // Karel facing west
-          map.karel = { x, y, facing: 1, beepers: 0 };
+          map.karel = { x, y, facing: "west", beepers: 0 };
           karelFound = true;
           break;
         case "v": // Karel facing south
-          map.karel = { x, y, facing: 2, beepers: 0 };
+          map.karel = { x, y, facing: "south", beepers: 0 };
           karelFound = true;
           break;
         case ">": // Karel facing east
-          map.karel = { x, y, facing: 3, beepers: 0 };
+          map.karel = { x, y, facing: "east", beepers: 0 };
           karelFound = true;
           break;
         case "*": {

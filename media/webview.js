@@ -82,8 +82,9 @@ function updateInfoPanel() {
   document.getElementById('position').textContent =
     '(' + world.karel.x + ', ' + world.karel.y + ')';
 
-  const directions = ['North', 'West', 'South', 'East'];
-  document.getElementById('facing').textContent = directions[world.karel.facing];
+  // Capitalize first letter of direction string
+  const facing = world.karel.facing.charAt(0).toUpperCase() + world.karel.facing.slice(1);
+  document.getElementById('facing').textContent = facing;
 
   document.getElementById('beepers').textContent = world.karel.beepers.toString();
 }
@@ -219,8 +220,12 @@ function drawKarel(karel, worldHeight, gridOffsetX, gridOffsetY) {
 
   // Rotate based on facing direction
   // Canvas rotation is clockwise for positive values
-  // N=0°, W=-90° (or 270°), S=180°, E=90°
-  const rotations = [0, -Math.PI / 2, Math.PI, Math.PI / 2]; // N, W, S, E
+  const rotations = {
+    'north': 0,
+    'west': -Math.PI / 2,
+    'south': Math.PI,
+    'east': Math.PI / 2
+  };
   ctx.rotate(rotations[karel.facing]);
 
   // Draw Karel as a triangle pointing up (north)

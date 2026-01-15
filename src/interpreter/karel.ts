@@ -1,12 +1,11 @@
 /**
  * Direction enum for Karel robot orientation.
- * Values are ordered for easy 90° counter-clockwise rotation: (dir + 1) % 4
  */
 export enum Direction {
-  North = 0,
-  West = 1,
-  South = 2,
-  East = 3,
+  North = "north",
+  West = "west",
+  South = "south",
+  East = "east",
 }
 
 /**
@@ -38,16 +37,29 @@ export const DirectionNames: Record<Direction, string> = {
 };
 
 /**
- * Parse a direction from a numeric value or string.
+ * Direction mapping for 90° counter-clockwise rotation (left turn).
  */
-export function parseDirection(value: number | string): Direction {
-  if (typeof value === "number") {
-    if (value >= 0 && value <= 3) {
-      return value as Direction;
-    }
-    throw new Error(`Invalid direction value: ${value}`);
-  }
+const LeftTurnMap: Record<Direction, Direction> = {
+  [Direction.North]: Direction.West,
+  [Direction.West]: Direction.South,
+  [Direction.South]: Direction.East,
+  [Direction.East]: Direction.North,
+};
 
+/**
+ * Direction mapping for 90° clockwise rotation (right turn).
+ */
+const RightTurnMap: Record<Direction, Direction> = {
+  [Direction.North]: Direction.East,
+  [Direction.East]: Direction.South,
+  [Direction.South]: Direction.West,
+  [Direction.West]: Direction.North,
+};
+
+/**
+ * Parse a direction from a string.
+ */
+export function parseDirection(value: string): Direction {
   const normalized = value.toLowerCase();
   switch (normalized) {
     case "north":
@@ -142,7 +154,7 @@ export class Karel {
    * Get the position to Karel's left.
    */
   leftPosition(): Position {
-    const leftDir = ((this._facing + 1) % 4) as Direction;
+    const leftDir = LeftTurnMap[this._facing];
     const vector = DirectionVectors[leftDir];
     return {
       x: this._position.x + vector.x,
@@ -154,7 +166,7 @@ export class Karel {
    * Get the position to Karel's right.
    */
   rightPosition(): Position {
-    const rightDir = ((this._facing + 3) % 4) as Direction;
+    const rightDir = RightTurnMap[this._facing];
     const vector = DirectionVectors[rightDir];
     return {
       x: this._position.x + vector.x,
@@ -175,7 +187,7 @@ export class Karel {
    * Turn Karel 90° counter-clockwise.
    */
   turnLeft(): void {
-    this._facing = ((this._facing + 1) % 4) as Direction;
+    this._facing = LeftTurnMap[this._facing];
   }
 
   /**
@@ -236,7 +248,7 @@ export class Karel {
   /**
    * Serialize Karel state to JSON-compatible object.
    */
-  toJSON(): { x: number; y: number; facing: number; beepers: number } {
+  toJSON(): { x: number; y: number; facing: string; beepers: number } {
     return {
       x: this._position.x,
       y: this._position.y,
@@ -248,7 +260,8 @@ export class Karel {
   /**
    * Create Karel from JSON-compatible object.
    */
-  static fromJSON(data: { x: number; y: number; facing: number; beepers?: number }): Karel {
-    return new Karel({ x: data.x, y: data.y }, data.facing as Direction, data.beepers ?? 0);
+  static fromJSON(data: { x: number; y: number; facing: string; beepers?: number }): Karel {
+    const facing = parseDirection(data.facing);
+    return new Karel({ x: data.x, y: data.y }, facing, data.beepers ?? 0);
   }
 }

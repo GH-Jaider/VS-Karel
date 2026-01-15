@@ -4,9 +4,22 @@
     {
       "type": "npm",
       "script": "watch",
-      "problemMatcher": [
-        "$tsc-watch"
-      ],
+      "problemMatcher": {
+        "owner": "webpack",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^ERROR in (.*)\\((\\d+),(\\d+)\\):",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 0
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Compiler starting",
+          "endsPattern": "compiled|Compiler finished",
+        }
+      },
       "isBackground": true,
       "presentation": {
         "reveal": "never"
