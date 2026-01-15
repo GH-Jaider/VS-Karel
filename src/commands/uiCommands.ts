@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import { World } from "@/interpreter";
 import { DiagnosticsProvider, WebviewProvider } from "@/providers";
-import { StateManager } from "@/services";
+import { StateManager, FileService } from "@/services";
 import { UIMessages } from "@/i18n/messages";
 import { loadMapFile } from "@/commands/worldCommands";
 
@@ -41,8 +41,11 @@ export async function openVisualizer(context: vscode.ExtensionContext): Promise<
 
   // Otherwise, prompt for a map file or create empty world
   if (!state.world) {
-    const loaded = await promptForMapFile(context);
-    if (!loaded) {
+    const fileService = FileService.getInstance();
+    const world = await fileService.promptAndLoadMapFile();
+    if (world) {
+      state.world = world;
+    } else {
       // Create default empty world
       state.world = World.createEmpty(10, 10);
     }
@@ -50,40 +53,4 @@ export async function openVisualizer(context: vscode.ExtensionContext): Promise<
 
   const webview = WebviewProvider.createOrShow(context.extensionUri);
   webview.loadWorld(state.world!);
-}
-
-/**
- * Prompt user to select a map file.
- */
-async function promptForMapFile(context: vscode.ExtensionContext): Promise<boolean> {
-  const state = StateManager.getInstance();
-
-  const options: vscode.OpenDialogOptions = {
-    canSelectMany: false,
-    filters: {
-      "Karel Maps": ["klm"],
-    },
-    title: UIMessages.selectMapFile(),
-  };
-
-  const fileUri = await vscode.window.showOpenDialog(options);
-
-  if (fileUri && fileUri[0]) {
-    const fs = await import("fs");
-    const content = fs.readFileSync(fileUri[0].fsPath, "utf-8");
-    try {
-      const map = JSON.parse(content);
-      state.world = World.fromJSON(map);
-
-      const webview = WebviewProvider.createOrShow(context.extensionUri);
-      webview.loadWorld(state.world);
-      return true;
-    } catch (error) {
-      if (error instanceof Error) {
-        vscode.window.showErrorMessage(`Failed to load map: ${error.message}`);
-      }
-    }
-  }
-
-  return false;
 }

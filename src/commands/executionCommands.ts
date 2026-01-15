@@ -6,8 +6,118 @@
 import * as vscode from "vscode";
 import { World, Interpreter, RuntimeError } from "@/interpreter";
 import { WebviewProvider } from "@/providers";
-import { StateManager } from "@/services";
+import { StateManager, FileService } from "@/services";
+import { clearExecutionHighlight } from "@/ui";
 import { UIMessages, t } from "@/i18n/messages";
+
+// Re-export for backwards compatibility (used in worldCommands)
+export { clearExecutionHighlight };
+
+/**
+ * Set up interpreter callbacks for execution.
+ * @param webview - The webview provider to update
+ * @param includeEditorHighlight - Whether to highlight current line in editor (for step mode)
+ */
+function setupInterpreterCallbacks(
+  webview: WebviewProvider,
+  includeEditorHighlight: boolean = false
+): void {
+  const state = StateManager.getInstance();
+  if (!state.interpreter) {
+    return;
+  }
+
+  state.interpreter.onStep = (line) => {
+    webview.updateView();
+    webview.highlightLine(line);
+
+    if (includeEditorHighlight && state.sourceDocument) {
+      const editors = vscode.window.visibleTextEditors.filter(
+        (e) => e.document === state.sourceDocument
+      );
+      editors.forEach((editor) => {
+        const range = new vscode.Range(line - 1, 0, line - 1, Number.MAX_VALUE);
+        editor.setDecorations(state.executionLineDecoration, [range]);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      });
+    }
+  };
+
+  state.interpreter.onComplete = () => {
+    webview.setStatus("completed", UIMessages.executionCompleted());
+    state.outputChannel.appendLine(UIMessages.executionCompleted());
+    if (includeEditorHighlight) {
+      clearExecutionHighlight();
+    }
+  };
+
+  state.interpreter.onError = (error: RuntimeError) => {
+    webview.setStatus("error", error.message);
+    state.outputChannel.appendLine(`Error: ${error.message}`);
+    vscode.window.showErrorMessage(error.message);
+    if (includeEditorHighlight) {
+      clearExecutionHighlight();
+    }
+  };
+}
+
+/**
+ * Prompt for instructions file and store in state.
+ * Returns true if successful.
+ */
+async function ensureInstructionsFile(): Promise<boolean> {
+  const state = StateManager.getInstance();
+  const fileService = FileService.getInstance();
+
+  const document = await fileService.promptAndOpenInstructionsFile();
+  if (document) {
+    state.sourceDocument = document;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Prompt for map file and store in state.
+ * Returns true if successful.
+ */
+async function ensureMapFile(context: vscode.ExtensionContext): Promise<boolean> {
+  const state = StateManager.getInstance();
+  const fileService = FileService.getInstance();
+
+  const world = await fileService.promptAndLoadMapFile();
+  if (world) {
+    state.world = world;
+    const webview = WebviewProvider.createOrShow(context.extensionUri);
+    webview.loadWorld(world);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Initialize interpreter with current world and source.
+ * Returns false if there are errors in the code.
+ */
+function initializeInterpreter(source: string): boolean {
+  const state = StateManager.getInstance();
+  if (!state.world) {
+    return false;
+  }
+
+  state.interpreter = new Interpreter(state.world);
+
+  const speed = vscode.workspace.getConfiguration("vs-karel").get("executionSpeed", 500);
+  state.interpreter.setSpeed(speed);
+
+  const diagnostics = state.interpreter.load(source);
+  if (diagnostics.some((d) => d.severity === "error")) {
+    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
+    return false;
+  }
+
+  return true;
+}
 
 /**
  * Run the current Karel program (from topbar - always resets and prompts for map).
@@ -18,8 +128,7 @@ export async function runProgram(context: vscode.ExtensionContext): Promise<void
 
   // If no active Karel instructions file, prompt user to select one
   if (!editor || editor.document.languageId !== "karel-instructions") {
-    const loaded = await promptForInstructionsFile(context);
-    if (!loaded) {
+    if (!(await ensureInstructionsFile())) {
       return;
     }
     editor = vscode.window.activeTextEditor;
@@ -32,54 +141,28 @@ export async function runProgram(context: vscode.ExtensionContext): Promise<void
   state.sourceDocument = editor.document;
 
   // Always prompt for map file (fresh start)
-  const loaded = await promptForMapFile(context);
-  if (!loaded || !state.world) {
+  if (!(await ensureMapFile(context)) || !state.world) {
     return;
   }
 
   // Open visualizer
   const webview = WebviewProvider.createOrShow(context.extensionUri);
-  webview.loadWorld(state.world!);
+  webview.loadWorld(state.world);
 
-  // Create interpreter
-  state.interpreter = new Interpreter(state.world!);
-
-  // Set execution speed from config
-  const speed = vscode.workspace.getConfiguration("vs-karel").get("executionSpeed", 500);
-  state.interpreter.setSpeed(speed);
-
-  // Load program
+  // Initialize interpreter
   const source = editor.document.getText();
-  const diagnostics = state.interpreter.load(source);
-
-  if (diagnostics.some((d) => d.severity === "error")) {
-    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
+  if (!initializeInterpreter(source)) {
     return;
   }
 
-  // Set up callbacks
-  state.interpreter.onStep = (line) => {
-    webview.updateView();
-    webview.highlightLine(line);
-  };
+  // Set up callbacks and run
+  setupInterpreterCallbacks(webview, false);
 
-  state.interpreter.onComplete = () => {
-    webview.setStatus("completed", UIMessages.executionCompleted());
-    state.outputChannel.appendLine(UIMessages.executionCompleted());
-  };
-
-  state.interpreter.onError = (error: RuntimeError) => {
-    webview.setStatus("error", error.message);
-    state.outputChannel.appendLine(`Error: ${error.message}`);
-    vscode.window.showErrorMessage(error.message);
-  };
-
-  // Run
   webview.setStatus("running", UIMessages.executionStarted());
   state.outputChannel.appendLine(UIMessages.executionStarted());
 
   try {
-    await state.interpreter.run();
+    await state.interpreter!.run();
   } catch (error) {
     if (error instanceof Error) {
       webview.setStatus("error", error.message);
@@ -96,8 +179,7 @@ export async function runFromWebview(context: vscode.ExtensionContext): Promise<
 
   // Ensure we have a world loaded
   if (!state.world) {
-    const loaded = await promptForMapFile(context);
-    if (!loaded || !state.world) {
+    if (!(await ensureMapFile(context)) || !state.world) {
       return;
     }
   }
@@ -122,8 +204,7 @@ export async function runFromWebview(context: vscode.ExtensionContext): Promise<
 
   // Ensure we have a source document
   if (!state.sourceDocument) {
-    const loaded = await promptForInstructionsFile(context);
-    if (!loaded || !state.sourceDocument) {
+    if (!(await ensureInstructionsFile()) || !state.sourceDocument) {
       return;
     }
   }
@@ -132,45 +213,20 @@ export async function runFromWebview(context: vscode.ExtensionContext): Promise<
   const webview = WebviewProvider.createOrShow(context.extensionUri);
   webview.loadWorld(state.world);
 
-  // Create interpreter
-  state.interpreter = new Interpreter(state.world);
-
-  // Set execution speed from config
-  const speed = vscode.workspace.getConfiguration("vs-karel").get("executionSpeed", 500);
-  state.interpreter.setSpeed(speed);
-
-  // Load program
+  // Initialize interpreter
   const source = state.sourceDocument.getText();
-  const diagnostics = state.interpreter.load(source);
-
-  if (diagnostics.some((d) => d.severity === "error")) {
-    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
+  if (!initializeInterpreter(source)) {
     return;
   }
 
-  // Set up callbacks
-  state.interpreter.onStep = (line) => {
-    webview.updateView();
-    webview.highlightLine(line);
-  };
+  // Set up callbacks and run
+  setupInterpreterCallbacks(webview, false);
 
-  state.interpreter.onComplete = () => {
-    webview.setStatus("completed", UIMessages.executionCompleted());
-    state.outputChannel.appendLine(UIMessages.executionCompleted());
-  };
-
-  state.interpreter.onError = (error: RuntimeError) => {
-    webview.setStatus("error", error.message);
-    state.outputChannel.appendLine(`Error: ${error.message}`);
-    vscode.window.showErrorMessage(error.message);
-  };
-
-  // Run
   webview.setStatus("running", UIMessages.executionStarted());
   state.outputChannel.appendLine(UIMessages.executionStarted());
 
   try {
-    await state.interpreter.run();
+    await state.interpreter!.run();
   } catch (error) {
     if (error instanceof Error) {
       webview.setStatus("error", error.message);
@@ -222,8 +278,7 @@ export async function stepProgram(context: vscode.ExtensionContext): Promise<voi
 
     // If still no valid editor, prompt for file
     if (!editor || editor.document.languageId !== "karel-instructions") {
-      const loaded = await promptForInstructionsFile(context);
-      if (!loaded) {
+      if (!(await ensureInstructionsFile())) {
         return;
       }
       editor = vscode.window.activeTextEditor;
@@ -238,8 +293,7 @@ export async function stepProgram(context: vscode.ExtensionContext): Promise<voi
 
   // Ensure we have a world loaded
   if (!state.world) {
-    const loaded = await promptForMapFile(context);
-    if (!loaded) {
+    if (!(await ensureMapFile(context))) {
       return;
     }
   }
@@ -248,55 +302,21 @@ export async function stepProgram(context: vscode.ExtensionContext): Promise<voi
   const webview = WebviewProvider.createOrShow(context.extensionUri);
   webview.loadWorld(state.world!);
 
-  // Create new interpreter for stepping
-  state.interpreter = new Interpreter(state.world!);
-
-  // Load program from stored document
+  // Initialize interpreter
   const source = state.sourceDocument.getText();
-  const diagnostics = state.interpreter.load(source);
-
-  if (diagnostics.some((d) => d.severity === "error")) {
-    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
+  if (!initializeInterpreter(source)) {
     return;
   }
 
-  // Set up callbacks
-  state.interpreter.onStep = (line) => {
-    webview.updateView();
-    webview.highlightLine(line);
-
-    // Highlight current execution line in editor
-    if (state.sourceDocument) {
-      const editors = vscode.window.visibleTextEditors.filter(
-        (e) => e.document === state.sourceDocument
-      );
-      editors.forEach((editor) => {
-        const range = new vscode.Range(line - 1, 0, line - 1, Number.MAX_VALUE);
-        editor.setDecorations(state.executionLineDecoration, [range]);
-        editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-      });
-    }
-  };
-
-  state.interpreter.onComplete = () => {
-    webview.setStatus("completed", UIMessages.executionCompleted());
-    state.outputChannel.appendLine(UIMessages.executionCompleted());
-    clearExecutionHighlight();
-  };
-
-  state.interpreter.onError = (error: RuntimeError) => {
-    webview.setStatus("error", error.message);
-    state.outputChannel.appendLine(`Error: ${error.message}`);
-    vscode.window.showErrorMessage(error.message);
-    clearExecutionHighlight();
-  };
+  // Set up callbacks (with editor highlighting for step mode)
+  setupInterpreterCallbacks(webview, true);
 
   webview.setStatus("stepping", UIMessages.stepMode());
   state.outputChannel.appendLine(UIMessages.stepMode());
 
   // Execute first step
   try {
-    const hasMore = state.interpreter.step();
+    const hasMore = state.interpreter!.step();
     if (!hasMore) {
       webview.setStatus("completed", UIMessages.executionCompleted());
     }
@@ -323,82 +343,4 @@ export function stopProgram(): void {
     state.outputChannel.appendLine(UIMessages.executionStopped());
     clearExecutionHighlight();
   }
-}
-
-/**
- * Clear execution line highlighting from all visible editors.
- */
-function clearExecutionHighlight(): void {
-  const state = StateManager.getInstance();
-
-  if (state.sourceDocument) {
-    const editors = vscode.window.visibleTextEditors.filter(
-      (e) => e.document === state.sourceDocument
-    );
-    editors.forEach((editor) => {
-      editor.setDecorations(state.executionLineDecoration, []);
-    });
-  }
-}
-
-/**
- * Prompt user to select a Karel instructions file.
- */
-async function promptForInstructionsFile(context: vscode.ExtensionContext): Promise<boolean> {
-  const state = StateManager.getInstance();
-
-  const options: vscode.OpenDialogOptions = {
-    canSelectMany: false,
-    filters: {
-      "Karel Instructions": ["kli"],
-    },
-    title: t("Select Karel Instructions File"),
-  };
-
-  const fileUri = await vscode.window.showOpenDialog(options);
-
-  if (fileUri && fileUri[0]) {
-    const document = await vscode.workspace.openTextDocument(fileUri[0]);
-    await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
-    state.sourceDocument = document;
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Prompt user to select a map file.
- */
-async function promptForMapFile(context: vscode.ExtensionContext): Promise<boolean> {
-  const state = StateManager.getInstance();
-
-  const options: vscode.OpenDialogOptions = {
-    canSelectMany: false,
-    filters: {
-      "Karel Maps": ["klm"],
-    },
-    title: UIMessages.selectMapFile(),
-  };
-
-  const fileUri = await vscode.window.showOpenDialog(options);
-
-  if (fileUri && fileUri[0]) {
-    const fs = await import("fs");
-    const content = fs.readFileSync(fileUri[0].fsPath, "utf-8");
-    try {
-      const map = JSON.parse(content);
-      state.world = World.fromJSON(map);
-
-      const webview = WebviewProvider.createOrShow(context.extensionUri);
-      webview.loadWorld(state.world);
-      return true;
-    } catch (error) {
-      if (error instanceof Error) {
-        vscode.window.showErrorMessage(`Failed to load map: ${error.message}`);
-      }
-    }
-  }
-
-  return false;
 }

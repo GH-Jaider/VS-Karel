@@ -2,4 +2,4 @@
  * UI utilities barrel exports
  */
 
-export { ExecutionDecorator } from "./executionDecorator";
+export { ExecutionDecorator, clearExecutionHighlight } from "./executionDecorator";

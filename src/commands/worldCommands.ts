@@ -8,6 +8,7 @@ import * as path from "path";
 import { World, KarelMap } from "@/interpreter";
 import { WebviewProvider } from "@/providers";
 import { StateManager } from "@/services";
+import { clearExecutionHighlight } from "@/ui";
 import { UIMessages, t } from "@/i18n/messages";
 
 /**
@@ -102,21 +103,5 @@ export function reloadMapFile(
       vscode.window.showErrorMessage(errorMsg);
       state.outputChannel.appendLine(errorMsg);
     }
-  }
-}
-
-/**
- * Clear execution line highlighting from all visible editors.
- */
-function clearExecutionHighlight(): void {
-  const state = StateManager.getInstance();
-
-  if (state.sourceDocument) {
-    const editors = vscode.window.visibleTextEditors.filter(
-      (e) => e.document === state.sourceDocument
-    );
-    editors.forEach((editor) => {
-      editor.setDecorations(state.executionLineDecoration, []);
-    });
   }
 }

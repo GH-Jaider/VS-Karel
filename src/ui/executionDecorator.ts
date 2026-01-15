@@ -4,6 +4,24 @@
  */
 
 import * as vscode from "vscode";
+import { StateManager } from "@/services/stateManager";
+
+/**
+ * Clear execution line highlighting from all visible editors.
+ * Standalone function for use across commands.
+ */
+export function clearExecutionHighlight(): void {
+  const state = StateManager.getInstance();
+
+  if (state.sourceDocument) {
+    const editors = vscode.window.visibleTextEditors.filter(
+      (e) => e.document === state.sourceDocument
+    );
+    editors.forEach((editor) => {
+      editor.setDecorations(state.executionLineDecoration, []);
+    });
+  }
+}
 
 export class ExecutionDecorator {
   private decoration: vscode.TextEditorDecorationType;

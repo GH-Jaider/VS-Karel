@@ -6,8 +6,19 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
+import { World, KarelMap } from "@/interpreter";
+import { UIMessages, t } from "@/i18n/messages";
 
 export class FileService {
+  private static instance: FileService;
+
+  public static getInstance(): FileService {
+    if (!FileService.instance) {
+      FileService.instance = new FileService();
+    }
+    return FileService.instance;
+  }
+
   /**
    * Prompt user to select a Karel instruction file (.kli)
    */
@@ -17,7 +28,7 @@ export class FileService {
       filters: {
         "Karel Instructions": ["kli"],
       },
-      title: "Select Karel Program",
+      title: t("Select Karel Instructions File"),
     });
 
     return files?.[0];
@@ -30,12 +41,49 @@ export class FileService {
     const files = await vscode.window.showOpenDialog({
       canSelectMany: false,
       filters: {
-        "Karel Map": ["klm"],
+        "Karel Maps": ["klm"],
       },
-      title: "Select Karel World Map",
+      title: UIMessages.selectMapFile(),
     });
 
     return files?.[0];
+  }
+
+  /**
+   * Prompt for and load an instructions file, opening it in the editor.
+   * Returns the opened document or undefined if cancelled/failed.
+   */
+  async promptAndOpenInstructionsFile(): Promise<vscode.TextDocument | undefined> {
+    const uri = await this.selectProgramFile();
+    if (!uri) {
+      return undefined;
+    }
+
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+    return document;
+  }
+
+  /**
+   * Prompt for and load a map file.
+   * Returns the World or undefined if cancelled/failed.
+   */
+  async promptAndLoadMapFile(): Promise<World | undefined> {
+    const uri = await this.selectMapFile();
+    if (!uri) {
+      return undefined;
+    }
+
+    try {
+      const content = await this.readFile(uri);
+      const map: KarelMap = JSON.parse(content);
+      return World.fromJSON(map);
+    } catch (error) {
+      if (error instanceof Error) {
+        vscode.window.showErrorMessage(`Failed to load map: ${error.message}`);
+      }
+      return undefined;
+    }
   }
 
   /**
