@@ -5,7 +5,7 @@
  */
 
 import * as vscode from "vscode";
-import { Parser, Diagnostic as KarelDiagnostic } from "../interpreter";
+import { Parser, Diagnostic as KarelDiagnostic } from "@/interpreter";
 
 export class DiagnosticsProvider {
   private diagnosticCollection: vscode.DiagnosticCollection;

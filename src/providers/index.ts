@@ -1,2 +1,2 @@
 export { DiagnosticsProvider } from "./diagnostics";
-export { WebviewProvider } from "./webview";
+export { WebviewProvider } from "./webview/WebviewProvider";
