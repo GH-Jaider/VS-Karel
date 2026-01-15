@@ -56,8 +56,7 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.commands.registerCommand("vs-karel.openVisualizer", () =>
       commands.openVisualizer(context)
-    ),
-    vscode.commands.registerCommand("vs-karel.convertMap", () => commands.convertAsciiMap())
+    )
   );
 
   // Auto-open visualizer when opening .klm files

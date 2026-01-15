@@ -8,7 +8,7 @@ import { World, Interpreter, RuntimeError } from "@/interpreter";
 import { WebviewProvider } from "@/providers";
 import { StateManager, FileService } from "@/services";
 import { clearExecutionHighlight } from "@/ui";
-import { UIMessages, t } from "@/i18n/messages";
+import { UIMessages } from "@/i18n/messages";
 
 // Re-export for backwards compatibility (used in worldCommands)
 export { clearExecutionHighlight };
@@ -112,7 +112,7 @@ function initializeInterpreter(source: string): boolean {
 
   const diagnostics = state.interpreter.load(source);
   if (diagnostics.some((d) => d.severity === "error")) {
-    vscode.window.showErrorMessage(t("Cannot run program: there are errors in the code"));
+    vscode.window.showErrorMessage(UIMessages.cannotRunWithErrors());
     return false;
   }
 
@@ -187,17 +187,17 @@ export async function runFromWebview(context: vscode.ExtensionContext): Promise<
   // If world is modified, show warning dialog
   if (state.world.isModified) {
     const choice = await vscode.window.showWarningMessage(
-      t("The world has been modified. Continue from current state or reset?"),
+      UIMessages.worldModifiedPrompt(),
       { modal: true },
-      t("Continue"),
-      t("Reset")
+      UIMessages.continueOption(),
+      UIMessages.resetOption()
     );
 
     if (!choice) {
       return; // User cancelled
     }
 
-    if (choice === t("Reset")) {
+    if (choice === UIMessages.resetOption()) {
       state.world.reset();
     }
   }

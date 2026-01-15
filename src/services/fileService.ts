@@ -7,7 +7,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { World, KarelMap } from "@/interpreter";
-import { UIMessages, t } from "@/i18n/messages";
+import { UIMessages } from "@/i18n/messages";
 
 export class FileService {
   private static instance: FileService;
@@ -28,7 +28,7 @@ export class FileService {
       filters: {
         "Karel Instructions": ["kli"],
       },
-      title: t("Select Karel Instructions File"),
+      title: UIMessages.selectInstructionsFile(),
     });
 
     return files?.[0];

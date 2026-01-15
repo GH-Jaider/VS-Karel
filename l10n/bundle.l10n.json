@@ -1,9 +1,0 @@
-{
-  "Cannot move: front is blocked": "",
-  "Cannot pick beeper: no beepers at position ({0}, {1})": "",
-  "Cannot put beeper: no beepers in bag": "",
-  "Invalid wall: cells ({0}, {1}) and ({2}, {3}) are not adjacent": "",
-  "Cannot run program: there are errors in the code": "",
-  "Select Karel Instructions File": "",
-  "Invalid map file: missing dimensions or karel": ""
-}

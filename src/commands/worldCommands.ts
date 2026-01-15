@@ -9,7 +9,7 @@ import { World, KarelMap } from "@/interpreter";
 import { WebviewProvider } from "@/providers";
 import { StateManager } from "@/services";
 import { clearExecutionHighlight } from "@/ui";
-import { UIMessages, t } from "@/i18n/messages";
+import { UIMessages } from "@/i18n/messages";
 
 /**
  * Reset the world to initial state.
@@ -82,7 +82,7 @@ export function reloadMapFile(
 
     // Validate map structure
     if (!map.dimensions || !map.karel) {
-      throw new Error(t("Invalid map file: missing dimensions or karel"));
+      throw new Error(UIMessages.invalidMapFile());
     }
 
     state.world = World.fromJSON(map);

@@ -1,15 +1,14 @@
 /**
- * Internationalization wrapper for VS Karel extension.
- * Uses VS Code's l10n API for localization support.
+ * Centralized message definitions for VS Karel extension.
+ * All user-facing strings are defined here for maintainability.
  */
-import * as vscode from "vscode";
 
 /**
- * Translates a message key to the current locale.
- * Falls back to the key itself if no translation is found.
+ * Simple string interpolation helper.
+ * Replaces {0}, {1}, etc. with provided arguments.
  */
-export function t(message: string, ...args: (string | number)[]): string {
-  return vscode.l10n.t(message, ...args);
+function format(message: string, ...args: (string | number)[]): string {
+  return message.replace(/\{(\d+)\}/g, (_, index) => String(args[parseInt(index)]));
 }
 
 /**
@@ -17,63 +16,69 @@ export function t(message: string, ...args: (string | number)[]): string {
  */
 export const ErrorMessages = {
   // Movement errors
-  moveBlocked: () => t("Cannot move: front is blocked"),
+  moveBlocked: () => "Cannot move: front is blocked",
 
   // Beeper errors
   noBeepersToPickUp: (x: number, y: number) =>
-    t("Cannot pick beeper: no beepers at position ({0}, {1})", x, y),
-  noBeepersInBag: () => t("Cannot put beeper: no beepers in bag"),
+    format("Cannot pick beeper: no beepers at position ({0}, {1})", x, y),
+  noBeepersInBag: () => "Cannot put beeper: no beepers in bag",
 
   // World errors
   karelOutOfBounds: (x: number, y: number) =>
-    t("Karel is out of bounds at position ({0}, {1})", x, y),
+    format("Karel is out of bounds at position ({0}, {1})", x, y),
   invalidWall: (x1: number, y1: number, x2: number, y2: number) =>
-    t("Invalid wall: cells ({0}, {1}) and ({2}, {3}) are not adjacent", x1, y1, x2, y2),
-  multipleKarels: () => t("Invalid map: multiple Karel positions defined"),
-  noKarel: () => t("Invalid map: no Karel position defined"),
+    format("Invalid wall: cells ({0}, {1}) and ({2}, {3}) are not adjacent", x1, y1, x2, y2),
+  multipleKarels: () => "Invalid map: multiple Karel positions defined",
+  noKarel: () => "Invalid map: no Karel position defined",
 
   // Parser errors
-  missingProgramStart: () => t("Missing BEGINNING-OF-PROGRAM at the start of the program"),
-  missingProgramEnd: () => t("Missing END-OF-PROGRAM at the end of the program"),
-  missingExecutionStart: () => t("Missing BEGINNING-OF-EXECUTION before instructions"),
-  missingExecutionEnd: () => t("Missing END-OF-EXECUTION after instructions"),
-  missingTurnoff: () => t("Missing turnoff instruction before END-OF-EXECUTION"),
-  unmatchedBegin: (line: number) => t("Unmatched BEGIN at line {0}", line),
-  unmatchedEnd: (line: number) => t("Unmatched END at line {0}", line),
+  missingProgramStart: () => "Missing BEGINNING-OF-PROGRAM at the start of the program",
+  missingProgramEnd: () => "Missing END-OF-PROGRAM at the end of the program",
+  missingExecutionStart: () => "Missing BEGINNING-OF-EXECUTION before instructions",
+  missingExecutionEnd: () => "Missing END-OF-EXECUTION after instructions",
+  missingTurnoff: () => "Missing turnoff instruction before END-OF-EXECUTION",
+  unmatchedBegin: (line: number) => format("Unmatched BEGIN at line {0}", line),
+  unmatchedEnd: (line: number) => format("Unmatched END at line {0}", line),
   invalidIndentation: (line: number) =>
-    t("Invalid indentation at line {0}: use tabs for indentation", line),
-  missingSemicolon: (line: number) => t("Missing semicolon at line {0}", line),
+    format("Invalid indentation at line {0}: use tabs for indentation", line),
+  missingSemicolon: (line: number) => format("Missing semicolon at line {0}", line),
   unexpectedSemicolon: (line: number) =>
-    t("Unexpected semicolon at line {0}: no semicolon before END", line),
+    format("Unexpected semicolon at line {0}: no semicolon before END", line),
   unknownInstruction: (name: string, line: number) =>
-    t("Unknown instruction '{0}' at line {1}", name, line),
+    format("Unknown instruction '{0}' at line {1}", name, line),
   unknownCondition: (name: string, line: number) =>
-    t("Unknown condition '{0}' at line {1}", name, line),
+    format("Unknown condition '{0}' at line {1}", name, line),
   invalidIterateCount: (line: number) =>
-    t("Invalid ITERATE count at line {0}: must be a positive integer", line),
+    format("Invalid ITERATE count at line {0}: must be a positive integer", line),
 
   // Execution errors
-  programNotLoaded: () => t("No program loaded"),
-  executionStopped: () => t("Execution was stopped"),
+  programNotLoaded: () => "No program loaded",
+  executionStopped: () => "Execution was stopped",
   maxIterationsReached: (max: number) =>
-    t("Maximum iterations ({0}) reached: possible infinite loop", max),
+    format("Maximum iterations ({0}) reached: possible infinite loop", max),
 };
 
 /**
  * UI messages for the extension.
  */
 export const UIMessages = {
-  errorHighlightingEnabled: () => t("Karel error highlighting enabled"),
-  errorHighlightingDisabled: () => t("Karel error highlighting disabled"),
-  executionStarted: () => t("Karel execution started"),
-  executionCompleted: () => t("Karel execution completed"),
-  executionStopped: () => t("Execution stopped"),
-  stepMode: () => t("Step mode - press Step to advance"),
-  noActiveFile: () => t("No active Karel file"),
-  selectMapFile: () => t("Select a Karel map file (.klm)"),
-  conversionComplete: (filename: string) => t("Map converted successfully: {0}", filename),
-  mapReloaded: (filename: string) => t("Map reloaded: {0}", filename),
+  errorHighlightingEnabled: () => "Karel error highlighting enabled",
+  errorHighlightingDisabled: () => "Karel error highlighting disabled",
+  executionStarted: () => "Karel execution started",
+  executionCompleted: () => "Karel execution completed",
+  executionStopped: () => "Execution stopped",
+  stepMode: () => "Step mode - press Step to advance",
+  noActiveFile: () => "No active Karel file",
+  selectMapFile: () => "Select a Karel map file (.klm)",
+  selectInstructionsFile: () => "Select Karel Instructions File",
+  conversionComplete: (filename: string) => format("Map converted successfully: {0}", filename),
+  mapReloaded: (filename: string) => format("Map reloaded: {0}", filename),
   mapReloadError: (filename: string, error: string) =>
-    t("Error reloading map {0}: {1}", filename, error),
-  programChanged: (filename: string) => t("Program changed to: {0}", filename),
+    format("Error reloading map {0}: {1}", filename, error),
+  programChanged: (filename: string) => format("Program changed to: {0}", filename),
+  cannotRunWithErrors: () => "Cannot run program: there are errors in the code",
+  worldModifiedPrompt: () => "The world has been modified. Continue from current state or reset?",
+  continueOption: () => "Continue",
+  resetOption: () => "Reset",
+  invalidMapFile: () => "Invalid map file: missing dimensions or karel",
 };

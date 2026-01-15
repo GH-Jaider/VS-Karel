@@ -5,7 +5,6 @@
   "commands.reset": "Reset World",
   "commands.toggleErrorHighlighting": "Toggle Error Highlighting",
   "commands.openVisualizer": "Open World Visualizer",
-  "commands.convertMap": "Convert ASCII Map to KLM",
   "config.enableErrorHighlighting": "Enable or disable error highlighting in Karel instruction files. Disable this for educational purposes where students should identify errors themselves.",
   "config.executionSpeed": "Execution speed in milliseconds between steps (50-2000ms). Lower values = faster execution.",
   "config.autoOpenVisualizer": "Automatically open the world visualizer when running a Karel program."

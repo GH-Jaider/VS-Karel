@@ -1,1 +1,0 @@
-export { parseAsciiMap } from "./mapConverter";
