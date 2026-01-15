@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src {{cspSource}}; script-src {{cspSource}};"
+    />
+    <title>Karel World</title>
+    <link rel="stylesheet" href="{{styleUri}}" />
+  </head>
+  <body>
+    <div class="toolbar">
+      <button id="runBtn" title="Run (Ctrl+Shift+R)">▶ Run</button>
+      <button id="stepBtn" title="Step (Ctrl+Shift+S)">⏭ Step</button>
+      <button id="stopBtn" title="Stop" disabled>⏹ Stop</button>
+      <button id="resetBtn" title="Reset">↺ Reset</button>
+      <button id="changeProgramBtn" title="Change Program">📄 Change Program</button>
+      <span id="status" class="status">Ready</span>
+      <div class="speed-control">
+        <label for="speed">Speed:</label>
+        <input type="range" id="speed" min="50" max="1000" value="500" step="50" />
+        <span id="speedValue">500ms</span>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="worldCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <div class="info-panel">
+      <div class="row">
+        <span class="label">Position:</span>
+        <span id="position">(1, 1)</span>
+      </div>
+      <div class="row">
+        <span class="label">Facing:</span>
+        <span id="facing">North</span>
+      </div>
+      <div class="row">
+        <span class="label">Beepers in Bag:</span>
+        <span id="beepers">0</span>
+      </div>
+    </div>
+
+    <script src="{{scriptUri}}"></script>
+  </body>
+</html>

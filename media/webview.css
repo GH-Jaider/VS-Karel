@@ -1,0 +1,135 @@
+:root {
+  --bg-color: var(--vscode-editor-background);
+  --fg-color: var(--vscode-editor-foreground);
+  --border-color: var(--vscode-panel-border);
+  --button-bg: var(--vscode-button-background);
+  --button-fg: var(--vscode-button-foreground);
+  --button-hover: var(--vscode-button-hoverBackground);
+  --cell-bg: var(--vscode-editor-background);
+  --wall-color: #666;
+  --beeper-color: #f0c040;
+  --karel-color: #4080f0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--vscode-font-family);
+  background: var(--bg-color);
+  color: var(--fg-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+button {
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+button:hover {
+  background: var(--button-hover);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.speed-control input {
+  width: 100px;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.status.running {
+  background: #2d5a27;
+}
+
+.status.stopped {
+  background: #5a4527;
+}
+
+.status.error {
+  background: #5a2727;
+}
+
+.status.completed {
+  background: #2d5a27;
+}
+
+.status.stepping {
+  background: #27455a;
+}
+
+#runBtn.modified {
+  background: #5a4527;
+  border: 2px solid #f0ad4e;
+}
+
+#runBtn.modified:hover {
+  background: #6b5330;
+}
+
+.canvas-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+#worldCanvas {
+  border: 2px solid var(--border-color);
+  background: var(--cell-bg);
+}
+
+.info-panel {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--vscode-sideBar-background);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.info-panel .row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.info-panel .label {
+  color: var(--vscode-descriptionForeground);
+}
