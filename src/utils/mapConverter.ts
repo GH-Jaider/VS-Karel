@@ -4,7 +4,7 @@
  * Converts ASCII art maps to the JSON-based .klm format.
  */
 
-import type { KarelMap } from "../interpreter";
+import type { KarelMap } from "@/interpreter";
 
 /**
  * Parse an ASCII map into KarelMap format.
