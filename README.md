@@ -10,14 +10,6 @@ A Visual Studio Code extension for Karel the Robot, an educational programming l
 - Step-by-step execution with line highlighting
 - Configurable execution speed
 
-## Installation
-
-Install from VSIX:
-
-1. Download the `.vsix` package
-2. Run `Extensions: Install from VSIX...` from the Command Palette
-3. Select the downloaded file
-
 ## Usage
 
 ### Keyboard Shortcuts
@@ -96,13 +88,12 @@ END-OF-PROGRAM
 ## Development
 
 ```bash
+git clone https://github.com/GH-Jaider/VS-Karel.git
+cd VS-Karel
 pnpm install
-pnpm run watch
 ```
 
 Press `F5` to launch the Extension Development Host.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
